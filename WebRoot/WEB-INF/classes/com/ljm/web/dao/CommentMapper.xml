@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ljm.web.dao.CommentMapper">
+
+	<resultMap id="CommentMap" type="Comment">
+		
+		<id property="ID" column="ID" javaType="java.lang.Integer"></id>
+		<result property="content" column="content" javaType="java.lang.String"></result>
+		<result property="date" column="date" javaType="java.lang.String"></result>
+		<association property="user" javaType="User">
+            <id property="ID" column="userID" javaType="java.lang.Integer"></id>
+			<result property="username" column="username" javaType="java.lang.String"></result>
+			<association property="img" javaType="Img">
+				<id property="ID" column="imgID" javaType="java.lang.Integer"></id>
+            	<result property="name" column="imgName" javaType="java.lang.String"></result>
+        	</association>
+        </association>
+        <association property="bookmark" javaType="BookMark">
+            <id property="ID" column="bookmarkID" javaType="java.lang.Integer"></id>
+        </association>
+	</resultMap>
+
+	<select id="getCommentsListPage" resultMap="CommentMap">
+		select TOP ${pageSize} c.*, username, i.name imgName, i.ID imgID
+		from Comment c, Users u, Img i 
+		where c.userID = u.ID
+		and c.bookmarkID = #{bookmarkID}
+		and u.imgID = i.ID
+		and c.ID not in (
+			select TOP ${beginPos} ID 
+			from Comment c
+			where c.bookmarkID = #{bookmarkID}
+		) Order By c.date
+	</select>
+	
+	<select id="getCommentsListCount" resultType="java.lang.Integer">
+		select count(ID) 
+		from Comment c
+		where c.bookmarkID = #{bookmarkID}
+	</select>
+	
+	<select id="getCommentByID" resultMap="CommentMap">
+		select c.*, username
+		from Comment c, Users u 
+		where u.ID = c.userID 
+		ans c.ID = #{ID}
+		Order By c.date
+	</select>
+	
+	<insert id="addComment">
+		insert into Comment(content, userID, bookmarkID, date) values(#{content}, #{userID}, #{bookmarkID}, #{date})
+	</insert>
+
+</mapper>

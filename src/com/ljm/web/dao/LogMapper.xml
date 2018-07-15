@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ljm.web.dao.LogMapper">
+
+	<resultMap id="LogMap" type="Log">
+		
+		<id property="ID" column="ID" javaType="java.lang.Integer"></id>
+		<result property="type" column="type" javaType="java.lang.String"></result>
+		<result property="userID" column="userID" javaType="java.lang.Integer"></result>
+		<result property="bookmarkID" column="bookmarkID" javaType="java.lang.Integer"></result>
+		<collection property="user" ofType="User" select="getUser" column="userID">  
+        </collection>
+        <collection property="bookmark" ofType="BookMark" select="getBookMark" column="bookmarkID">  
+        </collection>
+	</resultMap>
+
+	
+	<insert id="addLog">
+		insert into log(type, userID, bookmarkID, date) values(#{type}, #{userID}, #{bookmarkID}, #{date})
+	</insert>
+	
+	<select id="getLogListPage" resultMap="LogMap">
+		select top ${pageSize} *
+		from log
+		where type like '%' + #{word} + '%'
+		and ID not in(
+			select top ${beginPos} ID
+			from log
+			where type like '%' + #{word} + '%'
+			order by date 
+		)
+		order by date
+	</select>
+
+	<select id="getLogListCount" resultType="java.lang.Integer">
+		select count(ID)
+		from log
+		where type like '%' + #{word} + '%'
+	</select>
+	
+	<select id="getUser" resultType="User">
+		select username
+		from users
+		where ID = #{userID}
+	</select>
+	
+	<select id="getBookMark" resultType="BookMark">
+		select name
+		from bookmark
+		where ID = #{bookmarkID}
+	</select>
+	
+	<select id="getUserLogin" resultType="java.lang.Integer">
+		select count(ID)
+		from Log
+		where type = '用户登录'
+		and date = #{date}
+	</select>
+	
+	<select id="getUserRgst" resultType="java.lang.Integer">
+		select count(ID)
+		from Log
+		where type = '用户注册'
+		and date = #{date}
+	</select>
+	
+	<select id="getBookMarkVisit" resultType="java.lang.Integer">
+		select count(ID)
+		from Log
+		where type = '访问书签'
+		and date = #{date}
+	</select>
+	
+	<select id="getBookMarkShare" resultType="java.lang.Integer">
+		select count(ID)
+		from Log
+		where type = '分享书签'
+		and date = #{date}
+	</select>
+	
+	<select id="getBookMarkCollect" resultType="java.lang.Integer">
+		select count(ID)
+		from Log
+		where type = '收藏书签'
+		and date = #{date}
+	</select>
+	
+	<select id="getBookMarkAdd" resultType="java.lang.Integer">
+		select count(ID)
+		from Log
+		where type = '添加书签'
+		and date = #{date}
+	</select>
+</mapper>

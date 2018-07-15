@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ljm.web.dao.InformationMapper">
+
+	<resultMap id="InformationMap" type="Information">
+		<id property="ID" column="ID" javaType="java.lang.Integer"></id>
+		<result property="content" column="content" javaType="java.lang.String"></result>
+		<result property="type" column="type" javaType="java.lang.Integer"></result>
+        <result property="date" column="date" javaType="java.lang.String"></result>
+        <result property="isChecked" column="isChecked" javaType="java.lang.Integer"></result>
+        <result property="toUserID" column="toUserID" javaType="java.lang.Integer"></result>
+		<association property="fromUser" javaType="User">
+            <id property="ID" column="fromUserID" javaType="java.lang.Integer"></id>
+			<result property="username" column="fromUsername" javaType="java.lang.String"></result>
+        </association>
+        <association property="bookmark" javaType="BookMark">
+            <id property="ID" column="bookmarkID" javaType="java.lang.Integer"></id>
+            <result property="name" column="bookmarkName" javaType="java.lang.String"></result>
+        </association>
+	</resultMap>
+
+	<select id="queryInformationListPage" resultMap="InformationMap">
+		select TOP ${pageSize} i.ID, i.content, i.type, i.date, i.isChecked, 
+		i.toUserID, i.fromUserID, u.username fromUsername, 
+		i.bookmarkID, b.name bookmarkName
+		from information i
+		left join bookmark b on i.bookmarkID = b.ID
+		left join users u on i.fromUserID = u.ID
+		where i.toUserID = #{toUserID}
+		and i.ID not in (
+			select TOP ${beginPos} ID 
+			from Information 
+			where toUserID = #{toUserID}
+			Order By date Desc
+		) Order By i.date Desc
+	</select>
+	
+	<select id="queryInformationListCount" resultType="java.lang.Integer">
+		select count(ID) 
+		from Information 
+		where toUserID = #{toUserID}
+	</select>
+	
+	<select id="checkNewInformation" resultType="java.lang.Integer">
+		select count(i.ID)
+		from information i
+		where i.toUserID = #{userID}
+		and i.isChecked = 0
+	</select>
+	
+	
+	<update id="checkedInformation">  
+	    update  
+	    information
+	    set isChecked = 1
+	    where ID = #{informationID}  
+	</update>
+	
+	<insert id="shareBookMark">
+		insert into Information(fromUserID, toUserID, bookmarkID, date, content, type, isChecked) 
+		values(#{fromUserID}, #{toUserID}, #{bookmarkID}, #{date}, #{content}, 1, 0)
+	</insert>
+	
+	<select id="getUserIDArr" resultType="java.lang.Integer">
+		select ID
+		from users
+	</select>
+	
+	<insert id="sendInformation">
+		<foreach collection="userIDArr" item="userID">
+            insert into Information(type, content, toUserID, date, isChecked) values(2, #{content}, #{userID}, #{date}, 0)
+        </foreach>
+	</insert>
+</mapper>

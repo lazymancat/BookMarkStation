@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ljm.web.dao.CollectMapper">
+
+	<resultMap id="CollectMap" type="Collect">
+		
+		<id property="ID" column="ID" javaType="java.lang.Integer"></id>
+		<result property="userID" column="userID" javaType="java.lang.Integer"></result>
+		<result property="bookmarkID" column="bookmarkID" javaType="java.lang.Integer"></result>
+	</resultMap>
+
+	<select id="checkBookMarkMarked" resultMap="CollectMap">
+		select c.*
+		from Collect c
+		where c.userID = #{userID}
+		and c.bookmarkID = #{bookmarkID}
+	</select>
+	
+	<insert id="addCollect">
+		insert into Collect(userID, bookmarkID) values(#{userID}, #{bookmarkID})
+	</insert>
+	
+	<delete id="deleteCollect">  
+	    delete from Collect 
+	    where userID = #{userID} and bookmarkID = #{bookmarkID}  
+	</delete> 
+
+</mapper>

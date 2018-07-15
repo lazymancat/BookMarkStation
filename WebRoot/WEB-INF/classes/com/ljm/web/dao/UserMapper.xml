@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ljm.web.dao.UserMapper">
+
+	<resultMap id="userMap" type="User">
+		<id property="ID" column="ID" javaType="java.lang.Integer"></id>
+		<result property="username" column="username" javaType="java.lang.String"></result>
+		<result property="password" column="password" javaType="java.lang.String"></result>
+		<result property="email" column="email" javaType="java.lang.String"></result>
+		<result property="birthday" column="birthday" javaType="java.lang.String"></result>
+		<result property="sex" column="sex" javaType="java.lang.String"></result>
+		<result property="description" column="description" javaType="java.lang.String"></result>
+		<result property="rgstDate" column="rgstDate" javaType="java.lang.String"></result>
+		<result property="isBan" column="isBan" javaType="java.lang.Integer"></result>
+		<association property="img" javaType="Img">
+            <id property="ID" column="imgID" javaType="java.lang.Integer"></id>
+			<result property="name" column="imgName" javaType="java.lang.String"></result>
+        </association>
+        <collection property="createNum" ofType="java.lang.Integer" select="getCreateNum" column="ID"></collection>
+        <collection property="collectNum" ofType="java.lang.Integer" select="getCollectNum" column="ID"></collection>
+        <collection property="commentNum" ofType="java.lang.Integer" select="getCommentNum" column="ID"></collection>
+        <collection property="focusNum" ofType="java.lang.Integer" select="getFocusNum" column="ID"></collection>
+        <collection property="beFocusNum" ofType="java.lang.Integer" select="getBeFocusNum" column="ID"></collection>
+	</resultMap>
+
+	<select id="getUserByUsername" parameterType="java.lang.String" resultMap="userMap">
+		select u.*, i.name imgName 
+		from users u, img i
+		where username = #{username}
+		and u.imgID = i.ID
+	</select>
+	
+	<insert id="insertUser" parameterType="User" useGeneratedKeys="true" keyProperty="ID">
+		insert into users(username, password, email, imgID, rgstDate, isBan) values(#{username}, #{password}, #{email}, 2, #{rgstDate}, 0)
+	</insert>
+	
+	<select id="getUserByUserInfo" parameterType="User" resultMap="userMap">
+		select u.*, i.name imgName 
+		from users u, img i
+		where username = #{username} 
+		and password = #{password}
+		and u.imgID = i.ID
+	</select>
+
+	<select id="getUserByID" resultMap="userMap">
+		select u.*, i.name imgName 
+		from users u, img i
+		where u.ID = #{userID}
+		and u.imgID = i.ID
+	</select>
+	
+	<select id="checkEmailRgst" resultType="java.lang.Integer">
+		select count(u.ID)
+		from users u
+		where u.email = #{email}
+	</select>
+	
+	<update id="modifyInfo">  
+	    update  
+	    users
+	    set description = #{description},
+	    birthday = #{birthday},
+	    sex = #{sex}
+	    where ID = #{userID}  
+	</update>
+	
+	<update id="findPassword">  
+	    update  
+	    users
+	    set password = #{newPassword}
+	    where ID = #{userID}  
+	</update>
+	
+	<insert id="savePhoto" parameterType="Img" useGeneratedKeys="true" keyColumn="ID" keyProperty="ID">
+		insert into img(name) values(#{name})
+	</insert>
+	
+	<update id="modifyPhoto">  
+	    update  
+	    users
+	    set imgID = #{imgID}
+	    where ID = #{userID}  
+	</update>
+	
+	<select id="getUserListPage" resultMap="userMap">
+		select top ${pageSize} u.*, i.name imgName 
+		from users u, img i
+		where u.imgID = i.ID
+		and u.username like '%' + #{word} + '%'
+		and u.ID not in(
+			select top ${beginPos} ID
+			from users
+			where username like '%' + #{word} + '%'
+		)
+	</select>
+	
+	<select id="getUserListCount" resultType="java.lang.Integer">
+		select count(ID)
+		from users
+		where username like '%' + #{word} + '%'
+	</select>
+	
+	<select id="getUserFocusList" resultMap="userMap">
+		select u.*, i.name imgName
+		from users u, img i, focus f
+		where u.imgID = i.ID
+		and u.ID = f.toUserID
+		and f.fromUserID = #{fromUserID}
+	</select>
+	
+	<insert id="addFocus">
+		insert into Focus(fromUserID, toUserID) values(#{fromUserID}, #{toUserID})
+	</insert>
+	
+	<delete id="removeFocus">  
+	    delete from Focus 
+	    where fromUserID = #{fromUserID} and toUserID = #{toUserID}  
+	</delete> 
+	
+	<select id="checkUserBeFocus" resultType="java.lang.Integer">
+		select count(ID)
+		from focus
+		where fromUserID = #{fromUserID}
+		and toUserID = #{toUserID}
+	</select>
+	
+	<select id="getFocusUserListPage" resultMap="userMap">
+		select top ${pageSize} u.*, i.name imgName 
+		from users u, img i, focus f
+		where u.imgID = i.ID
+		and u.ID = f.toUserID
+		and f.fromUserID = #{fromUserID}
+		and u.username like '%' + #{word} + '%'
+		and u.ID not in(
+			select top ${beginPos} u.ID
+			from users u, focus f
+			where u.ID = f.toUserID
+			and f.fromUserID = #{fromUserID}
+			and u.username like '%' + #{word} + '%'
+		)
+	</select>
+	
+	<select id="getFocusUserListCount" resultType="java.lang.Integer">
+		select count(u.ID)
+		from users u, focus f
+		where u.ID = f.toUserID
+		and f.fromUserID = #{fromUserID}
+		and u.username like '%' + #{word} + '%'
+	</select>
+	
+	<select id="checkUserIsBan" resultType="java.lang.Integer">
+		select count(u.ID)
+		from users u
+		where u.username = #{username}
+		and u.password = #{password}
+		and u.isBan = 1
+	</select>
+	
+	<select id="getUserListPage_Admin" resultMap="userMap">
+		select top ${pageSize} u.*, i.name imgName 
+		from users u, img i
+		where u.imgID = i.ID
+		and u.username like '%' + #{word} + '%'
+		and u.ID not in(
+			select top ${beginPos} ID
+			from users
+			where username like '%' + #{word} + '%'
+		)
+	</select>
+	
+	<select id="getUserListCount_Admin" resultType="java.lang.Integer">
+		select count(ID) 
+		from users
+		where username like '%' + #{word} + '%'
+	</select>
+	
+	<select id="getCreateNum" resultType="java.lang.Integer">
+		select count(ID)
+		from bookmark
+		where userID = #{ID}
+	</select>
+	
+	<select id="getCollectNum" resultType="java.lang.Integer">
+		select count(ID)
+		from collect
+		where userID = #{ID}
+	</select>
+	
+	<select id="getCommentNum" resultType="java.lang.Integer">
+		select count(ID)
+		from comment
+		where userID = #{ID}
+	</select>
+	
+	<select id="getFocusNum" resultType="java.lang.Integer">
+		select count(ID)
+		from focus
+		where fromUserID = #{ID}
+	</select>
+	
+	<select id="getBeFocusNum" resultType="java.lang.Integer">
+		select count(ID)
+		from focus
+		where toUserID = #{ID}
+	</select>
+	
+	<update id="banUser">  
+	    update  
+	    users
+	    set isBan = 1
+	    where ID = #{userID}  
+	</update>
+	
+	<update id="unBanUser">  
+	    update  
+	    users
+	    set isBan = 0
+	    where ID = #{userID}  
+	</update>
+	
+	<select id="checkOldPasswordCorrect" resultType="java.lang.Integer">
+		select count(ID)
+		from users
+		where ID = #{userID}
+		and password = #{password}
+	</select>
+</mapper>

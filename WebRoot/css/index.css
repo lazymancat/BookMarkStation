@@ -1,0 +1,100 @@
+*{
+	margin:0;
+	padding:0;
+}
+
+body{
+	font-family:"Microsoft YaHei", "Î¢ÈíÑÅºÚ";
+}
+
+#headbar{
+	width:100%;
+	height:6%;
+	background-color:white;
+}
+
+#mainbody{
+	width:100%;
+	height:88%;
+	background-color:#1db5e2;
+}
+
+#footbar{
+	width:100%;
+	height:6%;
+	background-color:white;
+}
+
+#title{
+	display:none;
+	width:500px;
+	height:auto;
+	color:white;
+	text-align:right;
+	position:absolute;
+	margin-top:50px;
+	margin-left:50px;
+}
+
+#controlbox{
+	width:25%;
+	height:50%;
+	display:none;
+	background-color:white;
+	position:absolute;
+	margin-top:40px;
+	right:40px;
+	text-align:center;
+}
+
+#loginform{
+	width:90%;
+	height:auto;
+	background-color:white;
+	position:absolute;
+	left:5%;
+	padding:10% 0px 0px 0px;
+}
+
+#registerform{
+	width:90%;
+	height:auto;
+	background-color:white;
+	position:absolute;
+	left:5%;
+	z-index:1;
+	padding:10% 0px 0px 0px;
+	display:none;
+}
+
+#errormessage{
+	width:90%;
+	height:80px;
+	margin:auto;
+}
+
+.td-icon{
+	border:1px solid #bac4c4;
+}
+
+.td-input{
+	width:100%; 
+	border:1px solid #bac4c4; 
+	border-left:0px;
+	padding:5px;
+}
+
+.btn{
+	width:80%;
+	height:40px;
+	border:none;
+	margin:5px;
+	background-color:#1db5e2;
+	font-size:18px;
+	color:white;
+	cursor:pointer;
+}
+
+.btn:hover{
+	background-color:#09aab3;
+}

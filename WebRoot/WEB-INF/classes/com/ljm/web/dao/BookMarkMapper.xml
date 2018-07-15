@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ljm.web.dao.BookMarkMapper">
+
+	<resultMap id="BookMarkMap" type="BookMark">
+		<id property="ID" column="ID" javaType="java.lang.Integer"></id>
+		<result property="name" column="name" javaType="java.lang.String"></result>
+		<result property="link" column="link" javaType="java.lang.String"></result>
+		<result property="summary" column="summary" javaType="java.lang.String"></result>
+		<result property="date" column="date" javaType="java.lang.String"></result>
+		<association property="user" javaType="User">
+            <id property="ID" column="userID" javaType="java.lang.Integer"></id>
+			<result property="username" column="username" javaType="java.lang.String"></result>
+        </association>
+        <association property="img" javaType="Img">
+            <id property="ID" column="imgID" javaType="java.lang.Integer"></id>
+			<result property="name" column="i_name" javaType="java.lang.String"></result>
+        </association>
+        <collection property="labels" ofType="Label" select="getLabels" column="ID">  
+        </collection>
+        
+		<collection property="collectNumber" ofType="java.lang.Integer" select="getCollectNumber" column="ID"></collection>
+		<collection property="commentNumber" ofType="java.lang.Integer" select="getCommentNumber" column="ID" ></collection>
+		<collection property="shareNumber" ofType="java.lang.Integer" select="getShareNumber" column="ID" ></collection>
+	</resultMap>
+
+	<select id="getBookMarkListPage_type0" resultMap="BookMarkMap">
+		select TOP ${pageSize} b.*, i.name i_name, username
+		from Img i, Users u, BookMark b
+		where u.ID = b.userID
+		and i.ID = b.imgID 
+		and ( 
+			b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+		)
+		and b.ID not in (
+			select TOP ${beginPos} ID 
+			from BookMark 
+			where name like '%' + #{word} + '%'
+			or ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+		) Order By b.ID
+	</select>
+
+	<select id="getBookMarkListPage_type1" resultMap="BookMarkMap">
+		select TOP ${pageSize} b.*, i.name i_name, username
+		from Img i, Users u
+		left join (
+			select TOP ${pageSize + beginPos} *
+			from BookMark
+			where name like '%' + #{word} + '%'
+			or ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+			Order by date
+		) b on u.ID = b.userID
+		where i.ID = b.imgID
+		and b.ID not in (
+			select TOP ${beginPos} ID 
+			from BookMark 
+			where name like '%' + #{word} + '%'
+			or ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+			Order By date
+		)
+	</select>
+	
+	<select id="getBookMarkListPage_type2" resultMap="BookMarkMap">
+		select TOP ${pageSize} b.*, i.name i_name, username, collectNumber
+		from Img i, Users u, BookMark b
+		left join (
+			select b.ID as bookmarkID, count(c.ID) as collectNumber
+			from BookMark b left join Collect c on b.ID = c.bookmarkID
+			Group by b.ID
+		) col on col.bookmarkID = b.ID 
+		where u.ID = b.userID
+		and i.ID = b.imgID
+		and b.ID not in (
+			select top ${beginPos} b.ID
+			from BookMark b left join Collect c on b.ID = c.bookmarkID
+			where b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+			Group by b.ID
+			Order By count(c.ID) Desc
+		) 
+		and b.ID in (
+			select top ${beginPos + pageSize} b.ID
+			from BookMark b left join Collect c on b.ID = c.bookmarkID
+			where b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+			Group by b.ID
+			Order By count(c.ID) Desc
+		)
+		Order By collectNumber Desc
+	</select>
+	
+	<select id="getBookMarkListPage_type3" resultMap="BookMarkMap">
+		select TOP ${pageSize} b.*, i.name i_name, username, commentNumber
+		from Img i, Users u, BookMark b
+		left join (
+			select top ${beginPos + pageSize} b.ID as bookmarkID, count(c.ID) as commentNumber
+			from BookMark b left join Comment c on b.ID = c.bookmarkID
+			where b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+			Group by b.ID
+			Order By commentNumber Desc
+		) com on com.bookmarkID = b.ID
+		where u.ID = b.userID
+		and i.ID = b.imgID 
+		and (
+			b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+		)
+		and b.ID not in (
+			select top ${beginPos} b.ID
+			from BookMark b left join Comment c on b.ID = c.bookmarkID
+			where b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+			Group by b.ID
+			Order By count(c.ID) Desc
+		) Order By com.commentNumber Desc
+	</select>
+	
+	<select id="getBookMarkListPage_User" resultMap="BookMarkMap">
+		select TOP ${pageSize} b.*, i.name i_name, username, col.collectNumber
+		from Img i, Users u, Collect c, BookMark b
+		left join (
+			select b.ID as bookmarkID, count(c.userID) as collectNumber
+			from BookMark b left join Collect c on b.ID = c.bookmarkID
+			Group by b.ID
+		) col on col.bookmarkID = b.ID 
+		where u.ID = b.userID
+		and i.ID = b.imgID 
+		and c.bookmarkID = b.ID
+		and (
+			b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+		)
+		and c.userID = #{userID}
+		and b.ID not in (
+			select TOP ${beginPos} b.ID 
+			from BookMark b, Collect c
+			where (
+				b.name like '%' + #{word} + '%'
+				or b.ID in (
+					select bookmarkID
+					from Label
+					where name like '%' + #{word} + '%'
+				)
+			)
+			and c.userID = #{userID}
+			and c.bookmarkID = b.ID
+		) Order By b.ID
+	</select>
+	
+	<select id="getBookMarkListPage_Manage" resultMap="BookMarkMap">
+		select TOP ${pageSize} b.*, i.name i_name, username
+		from Img i, Users u, BookMark b
+		where u.ID = b.userID
+		and i.ID = b.imgID 
+		and (
+			b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+		)
+		and b.userID = #{userID}
+		and b.ID not in (
+			select TOP ${beginPos} b.ID 
+			from BookMark b
+			where (
+				b.name like '%' + #{word} + '%'
+				or b.ID in (
+					select bookmarkID
+					from Label
+					where name like '%' + #{word} + '%'
+				)
+			)
+			and b.userID = #{userID} 
+		) Order By b.ID
+	</select>
+	
+	<select id="getBookMarkListCount" resultType="java.lang.Integer">
+		select count(ID) 
+		from BookMark 
+		where name like '%' + #{word} + '%'
+		or ID in (
+			select bookmarkID
+			from Label
+			where name like '%' + #{word} + '%'
+		)
+	</select>
+	
+	<select id="getBookMarkListCount_User" resultType="java.lang.Integer">
+		select count(b.ID) 
+		from BookMark b, Collect c
+		where (
+			b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+		)
+		and b.ID = c.bookmarkID
+		and c.userID = #{userID}
+	</select>
+	
+	<select id="getBookMarkListCount_Manage" resultType="java.lang.Integer">
+		select count(b.ID) 
+		from BookMark b
+		where (
+			b.name like '%' + #{word} + '%'
+			or b.ID in (
+				select bookmarkID
+				from Label
+				where name like '%' + #{word} + '%'
+			)
+		)
+		and b.userID = #{userID}
+	</select>
+	
+	<select id="getBookMarkByID" resultMap="BookMarkMap">
+		select b.*, i.name i_name, username, col.collectNumber collectNumber
+		from Img i, Users u, BookMark b
+		left join (
+			select b.ID as bookmarkID, count(c.userID) as collectNumber
+			from BookMark b left join Collect c on b.ID = c.bookmarkID
+			Group by b.ID
+		) col on b.ID = col.bookmarkID
+		where u.ID = b.userID 
+		and i.ID = b.imgID 
+		and b.ID = #{ID}
+		Order By b.ID
+	</select>
+	
+	<select id="getRecentBookMark" resultMap="BookMarkMap">
+		select TOP 6 *
+		from BookMark b
+		Order By b.date Desc
+	</select>
+	
+	<select id="getPopularBookMark" resultMap="BookMarkMap">
+		select TOP 6 b.*
+		from BookMark b
+		left join (
+			select b.ID as bookmarkID, count(c.userID) as collectNumber
+			from BookMark b left join Collect c on b.ID = c.bookmarkID
+			Group by b.ID
+		) col on b.ID = col.bookmarkID
+		Order By col.collectNumber Desc
+	</select>
+	
+	<select id="getLabels" resultType="Label">
+		select *
+		from label
+		where bookmarkID = #{ID}
+	</select>
+
+	<insert id="saveBookMarkImg" parameterType="Img" useGeneratedKeys="true" keyColumn="ID" keyProperty="ID">
+		insert into img(name) values(#{name})
+	</insert>
+	
+	<insert id="addBookMark" parameterType="BookMark" useGeneratedKeys="true" keyColumn="ID" keyProperty="ID">
+		insert into BookMark(name, imgID, link, userID, summary, date) values(#{name}, #{img.ID}, #{link}, #{user.ID}, #{summary}, #{date})
+	</insert>
+	
+	<update id="modifyBookMarkImg">  
+	    update  
+	    BookMark
+	    set imgID = #{imgID}
+	    where ID = #{bookmarkID}  
+	</update>
+	
+	<update id="modifyBookMark">  
+	    update  
+	    BookMark
+	    set name = #{title}, link = #{link}, summary = #{summary}
+	    where ID = #{bookmarkID}  
+	</update>
+	
+	<delete id="removeBookMark">  
+	    delete from BookMark 
+	    where ID = #{bookmarkID}  
+	</delete> 
+	
+	<delete id="removeLabels">  
+	    delete from Label 
+	    where bookmarkID = #{bookmarkID}
+	</delete> 
+	
+	<insert id="addLabels">
+		<foreach collection="labels" item="label">
+            insert into label(name, bookmarkID) values(#{label}, #{bookmarkID})
+        </foreach>
+	</insert>
+	
+	<select id="getCollectNumber" resultType="java.lang.Integer">
+		select count(ID)
+		from collect
+		where bookmarkID = #{ID}
+	</select>
+	
+	<select id="getCommentNumber" resultType="java.lang.Integer">
+		select count(ID)
+		from Comment
+		where bookmarkID = #{ID}
+	</select>
+	
+	<select id="getShareNumber" resultType="java.lang.Integer">
+		select count(ID)
+		from Information
+		where type= 1
+		and bookmarkID = #{ID}
+	</select>
+	
+
+</mapper>
